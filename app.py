@@ -5,6 +5,24 @@ app = Flask(__name__)
 # In-memory storage for users
 users = []
 
+def validate_user_data(data):
+    """Validate user data"""
+    if not isinstance(data, dict):
+        return False, "User data must be a dictionary"
+    
+    # Check required fields
+    if 'username' not in data or not data['username']:
+        return False, "Username is required"
+    
+    if 'email' not in data or not data['email']:
+        return False, "Email is required"
+    
+    # Basic email validation
+    if '@' not in data['email']:
+        return False, "Invalid email format"
+    
+    return True, ""
+
 @app.route('/users', methods=['GET'])
 def get_users():
     return jsonify(users)
@@ -12,6 +30,12 @@ def get_users():
 @app.route('/users', methods=['POST'])
 def create_user():
     user = request.get_json()
+    
+    # Validate user data
+    is_valid, error_message = validate_user_data(user)
+    if not is_valid:
+        return jsonify({'error': error_message}), 400
+    
     users.append(user)
     return jsonify(user), 201
 
@@ -24,7 +48,14 @@ def get_user(user_id):
 @app.route('/users/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
     if user_id < len(users):
-        users[user_id] = request.get_json()
+        user_data = request.get_json()
+        
+        # Validate user data
+        is_valid, error_message = validate_user_data(user_data)
+        if not is_valid:
+            return jsonify({'error': error_message}), 400
+        
+        users[user_id] = user_data
         return jsonify(users[user_id])
     return jsonify({'error': 'User not found'}), 404
 
